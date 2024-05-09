@@ -1,0 +1,141 @@
+# Include necessary header files
+INCLUDE <stdio.h>
+INCLUDE "register.h"
+
+# Declare main function
+FUNCTION main():
+    # Declare a 2D array to store sales data
+    DECLARE int salesData[50][12]
+
+    # Declare file pointer
+    DECLARE FILE* f1
+
+    # Loop through each month to read data from files
+    FOR i FROM 0 TO 11:
+        SWITCH i
+            CASE 0: f1 = fopen("Jan_2023_data.txt", "r")
+            CASE 1: f1 = fopen("Feb_2023_data.txt", "r")
+            ...
+            CASE 11: f1 = fopen("Dec_2023_data.txt", "r")
+            DEFAULT:
+                PRINT "Invalid month:", i + 1
+                RETURN 1  # Exit the program with an error code
+
+        # Check if the file is successfully opened
+        IF f1 == NULL:
+            PRINT "Error opening file for month", i + 1
+            RETURN 1  # Exit the program with an error code
+
+        # Read data from the file and store it in salesData array
+        FOR j FROM 0 TO 49:
+            DECLARE int sales
+            DECLARE int result
+            result = fscanf(f1, "%*d %*s %d", &sales)
+
+            # Check if fscanf was successful
+            IF result == 1:
+                salesData[j][i] = sales
+            ELSE:
+                PRINT "Error reading from file for month", i + 1
+                fclose(f1)
+                RETURN 1  # Exit the program with an error code
+
+        # Close the file
+        fclose(f1)
+
+    # Prompt the user for the desired calculation
+    DECLARE int choice
+    PRINT "Which program would you like to run?"
+    PRINT "(1) Output the monthly sales of an item."
+    PRINT "(2) Calculate overall sales for all items."
+    PRINT "(3) Find the most popular item."
+    SCANF "%d", &choice
+
+    # Get the user input and run the corresponding function
+    SWITCH choice
+        CASE 1:
+            # Call print_item function
+            print_item(50, 12, salesData)
+        CASE 2:
+            # Call total_sales function
+            total_sales(50, 12, salesData)
+        CASE 3:
+            # Call top_overall function
+            top_overall(50, 12, salesData)
+        DEFAULT:
+            PRINT "Invalid choice. Exiting."
+            RETURN 1  # Exit the program with an error code
+
+    RETURN 0  # Exit successfully
+
+FUNCTION print_item(int rows, int cols, int data[][cols]):
+    # Ask the user which item they want to print
+    PRINT "Which item?"
+    
+    # Get user input for the item
+    DECLARE int itemCode
+    SCANF "%d", &itemCode
+
+    # Check if the item code is within the valid range
+    IF itemCode < 0 OR itemCode >= rows:
+        PRINT "Invalid item code."
+        RETURN
+
+    # Print the header with month names
+    PRINT "Jan\tFeb\tMar\tApr\tMay\tJun\tJul\tAug\tSep\tOct\tNov\tDec"
+
+    # Print sales data for the selected item
+    FOR month FROM 0 TO cols - 1:
+        PRINT data[itemCode][month] FOLLOWED BY "\t"
+
+    # Print the last month's sales data and a new line
+    PRINT data[itemCode][cols-1] FOLLOWED BY NEW LINE
+
+FUNCTION total_sales(int rows, int cols, int data[][cols]):
+    # Open sales.txt for writing
+    DECLARE FILE* salesFile = fopen("sales.txt", "w")
+
+    # Check if the file pointer is valid
+    IF salesFile == NULL:
+        PRINT "Error opening sales.txt for writing."
+        RETURN
+
+    # Print the header to sales.txt
+    FPRINTF salesFile, "Item\tSales\n"
+
+    # Loop through each item
+    FOR itemCode FROM 0 TO rows - 1:
+        # Initialize total sales for the current item to 0
+        DECLARE int totalSales = 0
+
+        # Loop through each month and accumulate sales
+        FOR month FROM 0 TO cols - 1:
+            totalSales += data[itemCode][month]
+
+        # Print item code and total sales to sales.txt
+        FPRINTF salesFile, "%02d\t%4d\n", itemCode, totalSales
+
+    # Close sales.txt
+    FCLOSE salesFile
+
+# Function to find the most popular item overall
+FUNCTION top_overall(int rows, int cols, int data[][cols]):
+    # Initialize variables to keep track of the most popular item
+    DECLARE int mostPopularItem = 0
+    DECLARE int maxSales = 0
+
+    # Loop through each item and calculate total sales
+    FOR item FROM 0 TO rows - 1:
+        DECLARE int totalSales = 0
+
+        # Loop through each month and accumulate sales
+        FOR month FROM 0 TO cols - 1:
+            totalSales += data[item][month]
+
+        # Update mostPopularItem if the current item has higher sales
+        IF totalSales > maxSales:
+            maxSales = totalSales
+            mostPopularItem = item
+
+    # Print the result to the terminal
+    PRINT "The most popular item is item", mostPopularItem, "."
